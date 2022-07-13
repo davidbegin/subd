@@ -25,6 +25,7 @@ use server::commands;
 use server::themesong;
 use server::users;
 use subd_types::get_nyx_sub;
+use subd_types::get_nyx_sub_for_begin;
 use subd_types::get_prime_sub;
 use subd_types::Event;
 use subd_types::ThemesongDownload;
@@ -43,7 +44,7 @@ use twitch_irc::ClientConfig;
 use twitch_irc::SecureTCPTransport;
 use twitch_irc::TwitchIRCClient;
 
-const CONNECT_OBS: bool = false;
+const CONNECT_OBS: bool = true;
 
 async fn handle_twitch_msg(
     tx: broadcast::Sender<Event>,
@@ -90,7 +91,10 @@ async fn handle_twitch_msg(
             "!echo" => {
                 let echo = commands::Echo::try_parse_from(&splitmsg);
                 if let Ok(echo) = echo {
-                    let _ = client.say("teej_dv".to_string(), echo.contents).await;
+
+                    // TODO: remove the hardcoded teej_dv
+                    let _ = client.say("beginbot".to_string(), echo.contents).await;
+                    // let _ = client.say("teej_dv".to_string(), echo.contents).await;
                 }
             }
             _ => {}
@@ -192,7 +196,7 @@ async fn handle_set_command<
         };
         themesong::mark_themesong_unplayed(conn, &user_id).await?;
         println!(
-            "  Successfully marked themseong unplayed for: {:?}",
+            "  Successfully marked themesong unplayed for: {:?}",
             twitch_user
         );
     }
@@ -202,7 +206,9 @@ async fn handle_set_command<
 
 fn get_chat_config() -> ClientConfig<StaticLoginCredentials> {
     ClientConfig::new_simple(StaticLoginCredentials::new(
-        "teej_dv_bot".to_string(),
+        // TODO(Make this generic)
+        // "teej_dv_bot".to_string(),
+        "beginbot".to_string(),
         Some(
             env::var("TWITCHBOT_OAUTH")
                 .expect("$TWITCHBOT_OAUTH must be set")
@@ -222,7 +228,9 @@ async fn handle_twitch_chat(
     let (mut incoming_messages, client) =
         TwitchIRCClient::<SecureTCPTransport, StaticLoginCredentials>::new(config);
 
-    client.join("teej_dv".to_owned()).unwrap();
+    // TODO(Make this generic)
+    client.join("beginbot".to_owned()).unwrap();
+    // client.join("teej_dv".to_owned()).unwrap();
 
     println!("handle_twitch_chat: waiting for msgs...");
     while let Some(message) = incoming_messages.recv().await {
@@ -278,9 +286,13 @@ async fn yew_inner_loop(
     Ok(())
 }
 
+// I'm not sure what this site is?
 async fn handle_yew(tx: broadcast::Sender<Event>, _: broadcast::Receiver<Event>) -> Result<()> {
+    // What Address should this be???
     // TODO(generalize)
-    let ws = TcpListener::bind("192.168.4.97:9001").await?;
+    // What is this address??
+    let ws = TcpListener::bind("localhost:9001").await?;
+    // let ws = TcpListener::bind("192.168.4.97:9001").await?;
 
     while let Ok((stream, _)) = ws.accept().await {
         let tx_clone = tx.clone();
@@ -306,12 +318,13 @@ async fn handle_twitch_sub_count(
 ) -> Result<()> {
     let helix: HelixClient<ReqwestClient> = HelixClient::default();
 
-    let reqwest_client = helix.clone_client();
+    // T
+    let request_client = helix.clone_client();
     let token = UserToken::from_existing(
-        &reqwest_client,
+        &request_client,
         AccessToken::new(
-            env::var("TWITCH_OAUTH")
-                .expect("$TWITCH_OAUTH must be set")
+            env::var("TWITCHBOT_OAUTH")
+                .expect("$TWITCHBOT_OAUTH must be set")
                 .replace("oauth:", "")
                 .to_string(),
         ),
@@ -326,7 +339,11 @@ async fn handle_twitch_sub_count(
         match event {
             Event::RequestTwitchSubCount => {
                 let req = GetBroadcasterSubscriptionsRequest::builder()
-                    .broadcaster_id(token.user_id.clone())
+
+                    // NOT sure where this is coming from
+                    // it might be the Bot's ID?
+                    .broadcaster_id( "424038378")
+                    // .broadcaster_id(token.user_id.clone())
                     .first("1".to_string())
                     .build();
 
@@ -347,24 +364,35 @@ async fn handle_twitch_notifications(
     // TODO(update_sub)
     // let mut conn = subd_db::get_handle().await;
 
+
+    // THESE AIN'T RIGHT!!!!!!!!!!!!!
     // Listen to subscriptions as well
     let subscriptions = pubsub::channel_subscriptions::ChannelSubscribeEventsV1 {
-        channel_id: 114257969,
+        // TEEJ
+        // channel_id: 114257969,
+        //
+        // BEGIN
+        channel_id: 424038378,
     }
     .into_topic();
 
     let redeems = pubsub::channel_points::ChannelPointsChannelV1 {
-        channel_id: 114257969,
+        // TEEJ
+        // channel_id: 114257969,
+        //
+        // BEGIN
+        channel_id: 424038378,
     }
     .into_topic();
 
     // Create the topic command to send to twitch
+    // MAYBE THESE AREN'T BOT TOKENS??????
     let command = pubsub::listen_command(
         // &[/* chat_mod_actions,  */ subsriptions],
         &[redeems, subscriptions],
         Some(
-            env::var("TWITCH_OAUTH")
-                .expect("$TWITCH_OAUTH must be set")
+            env::var("TWITCHBOT_OAUTH")
+                .expect("$TWITCHBOT_OAUTH must be set")
                 .replace("oauth:", "")
                 .as_str(),
         ),
@@ -603,7 +631,8 @@ async fn say<T: twitch_irc::transport::Transport, L: twitch_irc::login::LoginCre
     client: &TwitchIRCClient<T, L>,
     msg: impl Into<String>,
 ) -> Result<()> {
-    client.say("teej_dv".to_string(), msg.into()).await?;
+    client.say("beginbot".to_string(), msg.into()).await?;
+    // client.say("teej_dv".to_string(), msg.into()).await?;
     Ok(())
 }
 
@@ -635,9 +664,13 @@ async fn main() -> Result<()> {
 
     makechan!(handle_twitch_chat);
     makechan!(handle_twitch_msg);
+
+    // I have to turn off yew
     makechan!(handle_yew);
     makechan!(handle_twitch_sub_count);
-    makechan!(handle_twitch_notifications);
+
+    // This Ain't Working!!!!
+    // makechan!(handle_twitch_notifications);
 
     // Themesong functions
     makechan!(handle_themesong_download);
@@ -649,7 +682,11 @@ async fn main() -> Result<()> {
 
     if CONNECT_OBS {
         // Connect to the OBS instance through obs-websocket.
-        let obs_client = OBSClient::connect("192.168.4.22", 4444).await?;
+        // 	password := "NOTTHEPASSOWRD"
+	    // password := os.Getenv("OBS_WEBSOCKET_PASSWORD")
+
+	    // c := obsws.Client{Host: "localhost", Port: 4445, Password: password, Logger: stdLogger}
+        let obs_client = OBSClient::connect("localhost", 4445).await?;
 
         // Get and print out version information of OBS and obs-websocket.
         let version = obs_client.general().get_version().await?;
@@ -657,7 +694,7 @@ async fn main() -> Result<()> {
 
         // Can ignore the following, they were just things that I had working before
         // that I didn't want to forget about later.
-        obs_client.scenes().set_current_scene("PC - Dog").await?;
+        obs_client.scenes().set_current_scene("BRB").await?;
         obs_client
             .sources()
             .set_source_filter_visibility(SourceFilterVisibility {
@@ -691,8 +728,9 @@ async fn main() -> Result<()> {
         tokio::spawn(async move {
             println!("==> Sleeping...");
             tokio::time::sleep(Duration::from_millis(3000)).await;
-            println!("... SENDING NYX SUB NOTI");
-            x.send(Event::TwitchSubscription(get_nyx_sub()))
+            println!("... SENDING NYX BEGIN SUB NOTI");
+            x.send(Event::TwitchSubscription(get_nyx_sub_for_begin()))
+            // x.send(Event::TwitchSubscription(get_nyx_sub()))
                 .expect("to send message x 1");
 
             println!("==> Sleeping x 2...");

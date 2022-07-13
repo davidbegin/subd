@@ -177,7 +177,8 @@ fn reducer() -> Html {
     //     timeout.forget();
     // }
 
-    let ws = use_web_socket("ws://192.168.4.97:9001".to_string());
+    let ws = use_web_socket("ws://localhost:9001".to_string());
+    // let ws = use_web_socket("ws://192.168.4.97:9001".to_string());
 
     {
         let history = history.clone();

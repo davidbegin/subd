@@ -78,6 +78,34 @@ impl TwitchSubscriptionEvent {
     }
 }
 
+pub fn get_nyx_sub_for_begin() -> TwitchSubscriptionEvent {
+    let message = r##"
+{
+    "benefit_end_month": 11,
+    "user_name": "nyxkrage",
+    "display_name": "NyxKrage",
+    "channel_name": "beginbot",
+    "user_id": "1234",
+    "channel_id": "424038378",
+    "time": "2020-10-20T22:17:43.242793831Z",
+    "sub_message": {
+        "message": "You are my favorite streamer",
+        "emotes": null
+    },
+    "sub_plan": "1000",
+    "sub_plan_name": "Channel Subscription (emilgardis)",
+    "months": 0,
+    "cumulative_months": 1,
+    "context": "sub",
+    "is_gift": false,
+    "multi_month_duration": 0
+}
+"##;
+
+    let subscription = serde_json::from_str(message).unwrap();
+    TwitchSubscriptionEvent { subscription }
+}
+
 // const MY_CHANNEL: UserId = 114257969;
 
 pub fn get_nyx_sub() -> TwitchSubscriptionEvent {

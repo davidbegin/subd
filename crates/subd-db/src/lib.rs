@@ -25,7 +25,9 @@ pub struct User {
 // });
 
 pub async fn get_handle() -> SqliteConnection {
-    SqliteConnection::connect("sqlite:/home/tjdevries/git/subd/subd.db")
+    // These needs to read in from an Environment variable
+    SqliteConnection::connect("sqlite:/home/begin/code/subd/subd.db")
+    // SqliteConnection::connect("sqlite:/home/tjdevries/git/subd/subd.db")
         .await
         .expect("To connect to the database")
 }

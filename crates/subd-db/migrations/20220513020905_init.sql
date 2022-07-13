@@ -92,6 +92,11 @@ CREATE TABLE TWITCH_CHAT_HISTORY (
 CREATE TABLE USER_THEME_SONGS (
     user_id INTEGER unique NOT NULL,
     song BLOB NOT NULL,
+    start_seconds INTEGER,
+    end_seconds BIGINT,
+    start_minutes BIGINT,
+    end_minutes BIGINT,
+    duration UNSIGNED INTEGER,
 
     FOREIGN KEY(user_id) REFERENCES USERS(id)
 );

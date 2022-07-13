@@ -90,8 +90,10 @@ async fn main() -> anyhow::Result<()> {
 
     let x = Cursor::new(content.song);
     let rodioer = rodio::Decoder::new(BufReader::new(x)).unwrap();
-    let rodioer = rodioer.skip_duration(Duration::from_secs(content.start_seconds as u64));
-    let rodioer = rodioer.take_duration(Duration::from_secs(content.duration as u64));
+
+    // let rodioer = rodioer.skip_duration(Duration::from_secs(content.start_seconds as u64));
+    // let rodioer = rodioer.take_duration(Duration::from_secs(content.duration as u64));
+
     sink.append(rodioer);
 
     println!("Trying to play");
